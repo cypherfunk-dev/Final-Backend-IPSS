@@ -3,19 +3,24 @@ class SizeController {
     private $db;
 
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = new Database();
     }
 
     public function listAction() {
         try {
             $query = "SELECT * FROM Size";
-            $stmt = $this->db->prepare($query);
+            $stmt = $this->db->connection->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->connection->error);
+            }
             $stmt->execute();
-            $sizes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->get_result();
+            $sizes = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
             
             header('Content-Type: application/json');
             echo json_encode($sizes);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al obtener las tallas: " . $e->getMessage()]);
         }
@@ -29,11 +34,16 @@ class SizeController {
                 return;
             }
 
-            $query = "SELECT * FROM Size WHERE id = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $_GET['id'], PDO::PARAM_INT);
+            $query = "SELECT * FROM Size WHERE id = ?";
+            $stmt = $this->db->connection->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->connection->error);
+            }
+            $stmt->bind_param('i', $_GET['id']);
             $stmt->execute();
-            $size = $stmt->fetch(PDO::FETCH_ASSOC);
+            $result = $stmt->get_result();
+            $size = $result->fetch_assoc();
+            $stmt->close();
 
             if (!$size) {
                 header("HTTP/1.1 404 Not Found");
@@ -43,7 +53,7 @@ class SizeController {
 
             header('Content-Type: application/json');
             echo json_encode($size);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al obtener la talla: " . $e->getMessage()]);
         }

@@ -8,23 +8,9 @@
 
 ## Instalación
 
-1. Clona el repositorio:
-```bash
-git clone [URL_DEL_REPOSITORIO]
-cd [NOMBRE_DEL_DIRECTORIO]
-```
+docker-compose up -d  
 
-2. Configura la base de datos:
-- Crea una base de datos MySQL
-- Importa el archivo `database.sql` en tu base de datos
-
-3. Configura el archivo de conexión:
-- Edita el archivo `Inc/Database.php` con tus credenciales de base de datos
-
-4. Configura el servidor web:
-- Asegúrate de que el directorio del proyecto esté en la raíz de tu servidor web
-- El módulo mod_rewrite de Apache debe estar habilitado
-- Los permisos de los archivos deben ser correctos
+docker logs final-backend-ipss-mysql-1
 
 php -S localhost:8000 -t .
 

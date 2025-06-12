@@ -263,57 +263,52 @@ SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
-GRANT ALL PRIVILEGES ON *.* TO 'user'@'%' IDENTIFIED BY 'password';
-FLUSH PRIVILEGES;
+INSERT INTO `Client_category` (`category`, `offer_percentage`) VALUES
+('REGULAR', 10),
+('PREFERENCIAL', 20),
+('VIP', 30);
 
---datos para poblar
+INSERT INTO `Contact` (`first_name`, `last_name`, `email`, `phone`) VALUES
+('María', 'Gómez', 'maria@example.com', '111111111'),
+('Luis', 'Fernández', 'luis@example.com', '222222222'),
+('Elena', 'Martínez', 'elena@example.com', '333333333');
 
-INSERT INTO `Client_category` (`idcategory`, `category`, `offer_percentage`) VALUES
-(1, 'REGULAR', 10),
-(2, 'PREFERENCIAL', 20),
-(3, 'VIP', 30);
+INSERT INTO `Business` (`tax_id_number`, `business_name`, `business_address`, `idcontact`, `categoryid`) VALUES
+('3023456781', 'Tienda Deportiva Uno', 'Av. Siempreviva 123', 1, 1),
+('3076543212', 'Fanáticos del Fútbol', 'Calle Balón 456', 2, 2);
 
-INSERT INTO `Contact` (`idcontact`, `first_name`, `last_name`, `email`, `phone`) VALUES
-(1, 'María', 'Gómez', 'maria@example.com', '111111111'),
-(2, 'Luis', 'Fernández', 'luis@example.com', '222222222'),
-(3, 'Elena', 'Martínez', 'elena@example.com', '333333333');
+INSERT INTO `Club` ( `name`) VALUES
+('River Plate'),
+('Barcelona FC'),
+('Manchester United');
 
-INSERT INTO `Business` (`idbusiness`, `tax_id_number`, `business_name`, `business_address`, `idcontact`, `categoryid`) VALUES
-(1, '30-12345678-1', 'Tienda Deportiva Uno', 'Av. Siempreviva 123', 1, 1),
-(2, '30-87654321-2', 'Fanáticos del Fútbol', 'Calle Balón 456', 2, 2);
+INSERT INTO `Country` (`name`) VALUES
+('Argentina'),
+('España'),
+('Inglaterra');
 
-INSERT INTO `Club` (`idclub`, `name`) VALUES
-(1, 'River Plate'),
-(2, 'Barcelona FC'),
-(3, 'Manchester United');
+INSERT INTO `Sports_jersey` (`title`, `color`, `idcountry`, `idclub`, `sku`, `price`, `type`, `description`) VALUES
+('Camiseta River 2025', 'Roja y blanca', 1, 1, 'RIV25', 12000, 'Local', 'Camiseta oficial temporada 2025'),
+('Camiseta Barça 2025', 'Azulgrana', 2, 2, 'BAR25', 13500, 'Local', 'Versión oficial del club'),
+('Camiseta United 2025', 'Roja', 3, 3, 'MUN25', 12500, 'Visitante', 'Edición visitante');
 
-INSERT INTO `Country` (`idcountry`, `name`) VALUES
-(1, 'Argentina'),
-(2, 'España'),
-(3, 'Inglaterra');
+INSERT INTO `Size` (`name`) VALUES
+('S'),
+('M'),
+('L'),
+('XL');
 
-INSERT INTO `Sports_jersey` (`iditem`, `title`, `color`, `idcountry`, `idclub`, `sku`, `price`, `type`, `description`) VALUES
-(1, 'Camiseta River 2025', 'Roja y blanca', 1, 1, 'RIV25', 12000, 'Local', 'Camiseta oficial temporada 2025'),
-(2, 'Camiseta Barça 2025', 'Azulgrana', 2, 2, 'BAR25', 13500, 'Local', 'Versión oficial del club'),
-(3, 'Camiseta United 2025', 'Roja', 3, 3, 'MUN25', 12500, 'Visitante', 'Edición visitante');
+INSERT INTO `Size_availability` (`iditem`, `idsize`, `stock`) VALUES
+(1, 1, 5),
+(1, 2, 10),
+(2, 3, 7),
+(3, 4, 12);
 
-INSERT INTO `Size` (`idsize`, `name`) VALUES
-(1, 'S'),
-(2, 'M'),
-(3, 'L'),
-(4, 'XL');
+INSERT INTO `Orders` ( `businessid`) VALUES
+(1),
+(2);
 
-INSERT INTO `Size_availability` (`idavailability`, `iditem`, `idsize`, `stock`) VALUES
-(1, 1, 1, 5),
-(2, 1, 2, 10),
-(3, 2, 3, 7),
-(4, 3, 4, 12);
-
-INSERT INTO `Orders` (`idorders`, `businessid`) VALUES
-(1, 1),
-(2, 2);
-
-INSERT INTO `Order_detail` (`iddetail`, `iditem`, `orderid`, `quantity`) VALUES
-(1, 1, 1, 2),
-(2, 2, 1, 1),
-(3, 3, 2, 3);
+INSERT INTO `Order_detail` (`iditem`, `orderid`, `quantity`) VALUES
+( 1, 1, 2),
+( 2, 1, 1),
+( 3, 2, 3);
