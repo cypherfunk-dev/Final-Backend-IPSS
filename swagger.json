@@ -1,0 +1,767 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API de Camisetas Deportivas",
+        "description": "API para gestionar camisetas deportivas, incluyendo precios dinámicos según el cliente",
+        "version": "1.0.0",
+        "contact": {
+            "email": "support@example.com"
+        }
+    },
+    "servers": [
+        {
+            "url": "http://localhost/api",
+            "description": "Servidor de desarrollo"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Camisetas",
+            "description": "Operaciones relacionadas con camisetas deportivas"
+        },
+        {
+            "name": "Tallas",
+            "description": "Operaciones relacionadas con tallas disponibles"
+        },
+        {
+            "name": "Países",
+            "description": "Operaciones relacionadas con países"
+        },
+        {
+            "name": "Clubes",
+            "description": "Operaciones relacionadas con clubes deportivos"
+        },
+        {
+            "name": "Órdenes",
+            "description": "Operaciones relacionadas con órdenes y detalles de órdenes"
+        }
+    ],
+    "paths": {
+        "/sports-jersey": {
+            "get": {
+                "tags": ["Camisetas"],
+                "summary": "Obtener lista de camisetas",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Número máximo de resultados",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "client_id",
+                        "in": "query",
+                        "description": "ID del cliente (90minutos o tdeportes)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["90minutos", "tdeportes"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de camisetas obtenida exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SportsJersey"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Camisetas"],
+                "summary": "Crear una nueva camiseta",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SportsJerseyInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Camiseta creada exitosamente"
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/sports-jersey/{id}": {
+            "get": {
+                "tags": ["Camisetas"],
+                "summary": "Obtener una camiseta por ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "client_id",
+                        "in": "query",
+                        "description": "ID del cliente (90minutos o tdeportes)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": ["90minutos", "tdeportes"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Camiseta encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SportsJersey"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Camiseta no encontrada"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            },
+            "put": {
+                "tags": ["Camisetas"],
+                "summary": "Actualizar una camiseta",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SportsJerseyInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Camiseta actualizada exitosamente"
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "404": {
+                        "description": "Camiseta no encontrada"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Camisetas"],
+                "summary": "Eliminar una camiseta",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Camiseta eliminada exitosamente"
+                    },
+                    "404": {
+                        "description": "Camiseta no encontrada"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/sizes": {
+            "get": {
+                "tags": ["Tallas"],
+                "summary": "Obtener lista de tallas",
+                "responses": {
+                    "200": {
+                        "description": "Lista de tallas obtenida exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Size"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Tallas"],
+                "summary": "Crear una nueva talla",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SizeInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Talla creada exitosamente"
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/sizes/{id}": {
+            "get": {
+                "tags": ["Tallas"],
+                "summary": "Obtener una talla por ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Talla encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Size"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Talla no encontrada"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/countries": {
+            "get": {
+                "tags": ["Países"],
+                "summary": "Obtener lista de países",
+                "responses": {
+                    "200": {
+                        "description": "Lista de países obtenida exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Country"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Países"],
+                "summary": "Crear un nuevo país",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CountryInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "País creado exitosamente"
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/countries/{id}": {
+            "get": {
+                "tags": ["Países"],
+                "summary": "Obtener un país por ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "País encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Country"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "País no encontrado"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/clubs": {
+            "get": {
+                "tags": ["Clubes"],
+                "summary": "Obtener lista de clubes",
+                "responses": {
+                    "200": {
+                        "description": "Lista de clubes obtenida exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Club"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Clubes"],
+                "summary": "Crear un nuevo club",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClubInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Club creado exitosamente"
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/clubs/{id}": {
+            "get": {
+                "tags": ["Clubes"],
+                "summary": "Obtener un club por ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Club encontrado",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Club"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Club no encontrado"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "get": {
+                "tags": ["Órdenes"],
+                "summary": "Obtener lista de órdenes",
+                "responses": {
+                    "200": {
+                        "description": "Lista de órdenes obtenida exitosamente",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Order"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Órdenes"],
+                "summary": "Crear una nueva orden",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrderInput"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Orden creada exitosamente"
+                    },
+                    "400": {
+                        "description": "Datos inválidos"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        },
+        "/orders/{id}": {
+            "get": {
+                "tags": ["Órdenes"],
+                "summary": "Obtener una orden por ID",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Orden encontrada",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Order"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Orden no encontrada"
+                    },
+                    "500": {
+                        "description": "Error interno del servidor"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "SportsJersey": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "precio": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "precio_oferta": {
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true
+                    },
+                    "precio_final": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "country_id": {
+                        "type": "integer"
+                    },
+                    "club_id": {
+                        "type": "integer"
+                    },
+                    "country_name": {
+                        "type": "string"
+                    },
+                    "club_name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SportsJerseyInput": {
+                "type": "object",
+                "required": ["name", "description", "precio", "country_id", "club_id"],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "precio": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "precio_oferta": {
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true
+                    },
+                    "country_id": {
+                        "type": "integer"
+                    },
+                    "club_id": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "Size": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "SizeInput": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Country": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CountryInput": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Club": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "country_id": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "ClubInput": {
+                "type": "object",
+                "required": ["name", "country_id"],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "country_id": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "Order": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "client_id": {
+                        "type": "string"
+                    },
+                    "total": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItem"
+                        }
+                    }
+                }
+            },
+            "OrderItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "order_id": {
+                        "type": "integer"
+                    },
+                    "sports_jersey_id": {
+                        "type": "integer"
+                    },
+                    "size_id": {
+                        "type": "integer"
+                    },
+                    "quantity": {
+                        "type": "integer"
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float"
+                    }
+                }
+            },
+            "OrderInput": {
+                "type": "object",
+                "required": ["client_id", "items"],
+                "properties": {
+                    "client_id": {
+                        "type": "string"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemInput"
+                        }
+                    }
+                }
+            },
+            "OrderItemInput": {
+                "type": "object",
+                "required": ["sports_jersey_id", "size_id", "quantity"],
+                "properties": {
+                    "sports_jersey_id": {
+                        "type": "integer"
+                    },
+                    "size_id": {
+                        "type": "integer"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                }
+            }
+        }
+    }
+} 
