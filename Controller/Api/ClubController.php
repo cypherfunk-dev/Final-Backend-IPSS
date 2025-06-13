@@ -3,21 +3,24 @@ class ClubController {
     private $db;
 
     public function __construct() {
-        $this->db = Database::getInstance();
+        $this->db = new Database();
     }
 
     public function listAction() {
         try {
-            $query = "SELECT c.*, co.name as country_name 
-                     FROM Club c 
-                     LEFT JOIN Country co ON c.country_id = co.id";
-            $stmt = $this->db->prepare($query);
+            $query = "SELECT * FROM Club";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
             $stmt->execute();
-            $clubs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->get_result();
+            $clubs = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
             
             header('Content-Type: application/json');
             echo json_encode($clubs);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al obtener los clubes: " . $e->getMessage()]);
         }
@@ -31,14 +34,16 @@ class ClubController {
                 return;
             }
 
-            $query = "SELECT c.*, co.name as country_name 
-                     FROM Club c 
-                     LEFT JOIN Country co ON c.country_id = co.id 
-                     WHERE c.id = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $_GET['id'], PDO::PARAM_INT);
+            $query = "SELECT * FROM Club WHERE idclub = ?";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+            $stmt->bind_param('i', $_GET['id']);
             $stmt->execute();
-            $club = $stmt->fetch(PDO::FETCH_ASSOC);
+            $result = $stmt->get_result();
+            $club = $result->fetch_assoc();
+            $stmt->close();
 
             if (!$club) {
                 header("HTTP/1.1 404 Not Found");
@@ -48,7 +53,7 @@ class ClubController {
 
             header('Content-Type: application/json');
             echo json_encode($club);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al obtener el club: " . $e->getMessage()]);
         }
@@ -58,27 +63,109 @@ class ClubController {
         try {
             $data = json_decode(file_get_contents('php://input'), true);
 
-            if (!isset($data['name']) || !isset($data['country_id'])) {
+            if (!isset($data['name'])) {
                 header("HTTP/1.1 400 Bad Request");
-                echo json_encode(["error" => "Nombre del club o ID del país no proporcionados"]);
+                echo json_encode(["error" => "Nombre del club no proporcionado"]);
                 return;
             }
 
-            $query = "INSERT INTO Club (name, country_id) VALUES (:name, :country_id)";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':name', $data['name'], PDO::PARAM_STR);
-            $stmt->bindParam(':country_id', $data['country_id'], PDO::PARAM_INT);
-            $stmt->execute();
+            $query = "INSERT INTO Club (name) VALUES (?)";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+            
+            $stmt->bind_param('s', $data['name']);
+            if (!$stmt->execute()) {
+                throw new Exception("Error ejecutando consulta: " . $stmt->error);
+            }
 
-            $id = $this->db->lastInsertId();
+            $id = $stmt->insert_id;
+            $stmt->close();
+
             header("HTTP/1.1 201 Created");
             echo json_encode([
                 "message" => "Club creado exitosamente",
                 "id" => $id
             ]);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al crear el club: " . $e->getMessage()]);
+        }
+    }
+
+    public function updateAction() {
+        try {
+            if (!isset($_GET['id'])) {
+                header("HTTP/1.1 400 Bad Request");
+                echo json_encode(["error" => "ID no proporcionado"]);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!isset($data['name'])) {
+                header("HTTP/1.1 400 Bad Request");
+                echo json_encode(["error" => "Nombre del club no proporcionado"]);
+                return;
+            }
+
+            $query = "UPDATE Club SET name = ? WHERE idclub = ?";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+
+            $stmt->bind_param('si', $data['name'], $_GET['id']);
+            if (!$stmt->execute()) {
+                throw new Exception("Error ejecutando consulta: " . $stmt->error);
+            }
+
+            if ($stmt->affected_rows === 0) {
+                header("HTTP/1.1 404 Not Found");
+                echo json_encode(["error" => "Club no encontrado"]);
+                return;
+            }
+
+            $stmt->close();
+            header("HTTP/1.1 200 OK");
+            echo json_encode(["message" => "Club actualizado exitosamente"]);
+        } catch (Exception $e) {
+            header("HTTP/1.1 500 Internal Server Error");
+            echo json_encode(["error" => "Error al actualizar el club: " . $e->getMessage()]);
+        }
+    }
+
+    public function deleteAction() {
+        try {
+            if (!isset($_GET['id'])) {
+                header("HTTP/1.1 400 Bad Request");
+                echo json_encode(["error" => "ID no proporcionado"]);
+                return;
+            }
+
+            $query = "DELETE FROM Club WHERE idclub = ?";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+
+            $stmt->bind_param('i', $_GET['id']);
+            if (!$stmt->execute()) {
+                throw new Exception("Error ejecutando consulta: " . $stmt->error);
+            }
+
+            if ($stmt->affected_rows === 0) {
+                header("HTTP/1.1 404 Not Found");
+                echo json_encode(["error" => "Club no encontrado"]);
+                return;
+            }
+
+            $stmt->close();
+            header("HTTP/1.1 200 OK");
+            echo json_encode(["message" => "Club eliminado exitosamente"]);
+        } catch (Exception $e) {
+            header("HTTP/1.1 500 Internal Server Error");
+            echo json_encode(["error" => "Error al eliminar el club: " . $e->getMessage()]);
         }
     }
 } 

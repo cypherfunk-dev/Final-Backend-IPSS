@@ -9,9 +9,9 @@ class SizeController {
     public function listAction() {
         try {
             $query = "SELECT * FROM Size";
-            $stmt = $this->db->connection->prepare($query);
+            $stmt = $this->db->getConnection()->prepare($query);
             if (!$stmt) {
-                throw new Exception("Error preparando consulta: " . $this->db->connection->error);
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
             }
             $stmt->execute();
             $result = $stmt->get_result();
@@ -35,9 +35,9 @@ class SizeController {
             }
 
             $query = "SELECT * FROM Size WHERE id = ?";
-            $stmt = $this->db->connection->prepare($query);
+            $stmt = $this->db->getConnection()->prepare($query);
             if (!$stmt) {
-                throw new Exception("Error preparando consulta: " . $this->db->connection->error);
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
             }
             $stmt->bind_param('i', $_GET['id']);
             $stmt->execute();
@@ -69,18 +69,26 @@ class SizeController {
                 return;
             }
 
-            $query = "INSERT INTO Size (name) VALUES (:name)";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':name', $data['name'], PDO::PARAM_STR);
-            $stmt->execute();
+            $query = "INSERT INTO Size (name) VALUES (?)";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+            
+            $stmt->bind_param('s', $data['name']);
+            if (!$stmt->execute()) {
+                throw new Exception("Error ejecutando consulta: " . $stmt->error);
+            }
 
-            $id = $this->db->lastInsertId();
+            $id = $stmt->insert_id;
+            $stmt->close();
+
             header("HTTP/1.1 201 Created");
             echo json_encode([
                 "message" => "Talla creada exitosamente",
                 "id" => $id
             ]);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al crear la talla: " . $e->getMessage()]);
         }

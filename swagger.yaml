@@ -1,0 +1,647 @@
+openapi: 3.0.0
+info:
+  title: API de Camisetas Deportivas
+  description: API para gestionar camisetas deportivas, incluyendo precios dinámicos según el cliente
+  version: 1.0.0
+  contact:
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8000/api
+    description: Servidor de desarrollo
+
+tags:
+  - name: Camisetas
+    description: Operaciones relacionadas con camisetas deportivas
+  - name: Tallas
+    description: Operaciones relacionadas con tallas disponibles
+  - name: Países
+    description: Operaciones relacionadas con países
+  - name: Clubes
+    description: Operaciones relacionadas con clubes deportivos
+  - name: Órdenes
+    description: Operaciones relacionadas con órdenes y detalles de órdenes
+
+paths:
+  /sports-jersey:
+    get:
+      tags: ["Camisetas"]
+      summary: Obtener lista de camisetas
+      parameters:
+        - name: limit
+          in: query
+          description: Número máximo de resultados
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: client_id
+          in: query
+          description: ID del cliente (90minutos o tdeportes)
+          required: false
+          schema:
+            type: string
+            enum: ["90minutos", "tdeportes"]
+      responses:
+        '200':
+          description: Lista de camisetas obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SportsJersey'
+        '500':
+          description: Error interno del servidor
+
+    post:
+      tags: ["Camisetas"]
+      summary: Crear una nueva camiseta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SportsJersey'
+      responses:
+        '201':
+          description: Camiseta creada exitosamente
+        '400':
+          description: Datos inválidos
+        '500':
+          description: Error interno del servidor
+
+  /sports-jersey/{id}:
+    get:
+      tags: ["Camisetas"]
+      summary: Obtener una camiseta por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: client_id
+          in: query
+          description: ID del cliente (90minutos o tdeportes)
+          required: false
+          schema:
+            type: string
+            enum: ["90minutos", "tdeportes"]
+      responses:
+        '200':
+          description: Camiseta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportsJersey'
+        '404':
+          description: Camiseta no encontrada
+        '500':
+          description: Error interno del servidor
+
+    put:
+      tags: ["Camisetas"]
+      summary: Actualizar una camiseta
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SportsJersey'
+      responses:
+        '200':
+          description: Camiseta actualizada exitosamente
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Camiseta no encontrada
+        '500':
+          description: Error interno del servidor
+
+    delete:
+      tags: ["Camisetas"]
+      summary: Eliminar una camiseta
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Camiseta eliminada exitosamente
+        '404':
+          description: Camiseta no encontrada
+        '500':
+          description: Error interno del servidor
+
+  /sizes:
+    get:
+      tags: ["Tallas"]
+      summary: Obtener lista de tallas
+      responses:
+        '200':
+          description: Lista de tallas obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Size'
+        '500':
+          description: Error interno del servidor
+
+    post:
+      tags: ["Tallas"]
+      summary: Crear una nueva talla
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SizeInput'
+      responses:
+        '201':
+          description: Talla creada exitosamente
+        '400':
+          description: Datos inválidos
+        '500':
+          description: Error interno del servidor
+
+  /countries:
+    get:
+      tags: ["Países"]
+      summary: Obtener lista de países
+      responses:
+        '200':
+          description: Lista de países obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Country'
+        '500':
+          description: Error interno del servidor
+
+    post:
+      tags: ["Países"]
+      summary: Crear un nuevo país
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountryInput'
+      responses:
+        '201':
+          description: País creado exitosamente
+        '400':
+          description: Datos inválidos
+        '500':
+          description: Error interno del servidor
+
+  /countries/{id}:
+    get:
+      tags: ["Países"]
+      summary: Obtener un país por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: País encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Country'
+        '404':
+          description: País no encontrado
+        '500':
+          description: Error interno del servidor
+
+    put:
+      tags: ["Países"]
+      summary: Actualizar un país
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountryInput'
+      responses:
+        '200':
+          description: País actualizado exitosamente
+        '400':
+          description: Datos inválidos
+        '404':
+          description: País no encontrado
+        '500':
+          description: Error interno del servidor
+
+    delete:
+      tags: ["Países"]
+      summary: Eliminar un país
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: País eliminado exitosamente
+        '404':
+          description: País no encontrado
+        '500':
+          description: Error interno del servidor
+
+  /clubs:
+    get:
+      tags: ["Clubes"]
+      summary: Obtener lista de clubes
+      responses:
+        '200':
+          description: Lista de clubes obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Club'
+        '500':
+          description: Error interno del servidor
+
+    post:
+      tags: ["Clubes"]
+      summary: Crear un nuevo club
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClubInput'
+      responses:
+        '201':
+          description: Club creado exitosamente
+        '400':
+          description: Datos inválidos
+        '500':
+          description: Error interno del servidor
+
+  /clubs/{id}:
+    get:
+      tags: ["Clubes"]
+      summary: Obtener un club por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Club encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+        '404':
+          description: Club no encontrado
+        '500':
+          description: Error interno del servidor
+
+    put:
+      tags: ["Clubes"]
+      summary: Actualizar un club
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClubInput'
+      responses:
+        '200':
+          description: Club actualizado exitosamente
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Club no encontrado
+        '500':
+          description: Error interno del servidor
+
+    delete:
+      tags: ["Clubes"]
+      summary: Eliminar un club
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Club eliminado exitosamente
+        '404':
+          description: Club no encontrado
+        '500':
+          description: Error interno del servidor
+
+  /orders:
+    get:
+      tags: ["Órdenes"]
+      summary: Obtener lista de órdenes
+      responses:
+        '200':
+          description: Lista de órdenes obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '500':
+          description: Error interno del servidor
+
+    post:
+      tags: ["Órdenes"]
+      summary: Crear una nueva orden
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - businessid
+                - items
+              properties:
+                businessid:
+                  type: integer
+                  description: ID del negocio
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - iditem
+                      - quantity
+                    properties:
+                      iditem:
+                        type: integer
+                        description: ID de la camiseta deportiva
+                      quantity:
+                        type: integer
+                        description: Cantidad de camisetas
+      responses:
+        '201':
+          description: Orden creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  id:
+                    type: integer
+                  total:
+                    type: number
+                    format: float
+        '400':
+          description: Datos inválidos
+        '500':
+          description: Error interno del servidor
+
+  /orders/{id}:
+    get:
+      tags: ["Órdenes"]
+      summary: Obtener una orden por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Orden encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Orden no encontrada
+        '500':
+          description: Error interno del servidor
+
+components:
+  schemas:
+    SportsJersey:
+      type: object
+      required:
+        - title
+        - color
+        - idcountry
+        - idclub
+        - sku
+        - price
+        - type
+      properties:
+        iditem:
+          type: integer
+          description: ID único de la camiseta
+          example: 1
+        title:
+          type: string
+          maxLength: 45
+          description: Título de la camiseta
+          example: "Camiseta de Ejemplo"
+        color:
+          type: string
+          maxLength: 45
+          description: Color de la camiseta
+          example: "Rojo"
+        idcountry:
+          type: integer
+          description: ID del país (referencia a la tabla Country)
+          example: 1
+        idclub:
+          type: integer
+          description: ID del club (referencia a la tabla Club)
+          example: 1
+        sku:
+          type: string
+          maxLength: 20
+          description: Código SKU único de la camiseta
+          example: "SKU123"
+        price:
+          type: integer
+          description: Precio base de la camiseta
+          example: 2999
+        type:
+          type: string
+          maxLength: 50
+          description: Tipo de camiseta (player, fan, etc.)
+          example: "player"
+        description:
+          type: string
+          maxLength: 100
+          description: Descripción opcional de la camiseta
+          example: "Camiseta oficial del equipo"
+          nullable: true
+        created:
+          type: string
+          format: date-time
+          description: Fecha y hora de creación del registro
+          example: "2024-03-14T12:00:00Z"
+        modified:
+          type: string
+          format: date-time
+          description: Fecha y hora de la última modificación
+          example: "2024-03-14T12:00:00Z"
+        deleted:
+          type: string
+          format: date-time
+          description: Fecha y hora de eliminación (si aplica)
+          example: null
+          nullable: true
+
+    Size:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: integer
+          description: ID único de la talla
+          example: 1
+        name:
+          type: string
+          description: Nombre de la talla
+          example: "M"
+
+    SizeInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Nombre de la talla
+          example: "M"
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error en la operación"
+
+    Country:
+      type: object
+      required:
+        - name
+      properties:
+        idcountry:
+          type: integer
+          description: ID único del país
+          example: 1
+        name:
+          type: string
+          description: Nombre del país
+          example: "España"
+
+    CountryInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Nombre del país
+          example: "España"
+
+    Club:
+      type: object
+      required:
+        - name
+      properties:
+        idclub:
+          type: integer
+          description: ID único del club
+          example: 1
+        name:
+          type: string
+          description: Nombre del club
+          example: "Real Madrid"
+
+    ClubInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Nombre del club
+          example: "Real Madrid"
+
+    Order:
+      type: object
+      properties:
+        idorders:
+          type: integer
+          description: ID de la orden
+        businessid:
+          type: integer
+          description: ID del cliente
+        total:
+          type: number
+          format: float
+          description: Total de la orden con descuentos aplicados
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID del detalle de la orden
+        sports_jersey_id:
+          type: integer
+          description: ID de la camiseta deportiva
+        quantity:
+          type: integer
+          description: Cantidad de camisetas
+        price:
+          type: number
+          format: float
+          description: Precio unitario con descuento aplicado según la categoría del cliente 

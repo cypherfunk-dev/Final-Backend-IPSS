@@ -5,7 +5,7 @@ class OrderController extends BaseController
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db = new Database();
     }
 
     public function listAction()
@@ -14,19 +14,24 @@ class OrderController extends BaseController
             $query = "SELECT o.*, 
                      GROUP_CONCAT(
                          JSON_OBJECT(
-                             'id', oi.id,
-                             'sports_jersey_id', oi.sports_jersey_id,
-                             'size_id', oi.size_id,
+                             'id', oi.iddetail,
+                             'sports_jersey_id', oi.iditem,
                              'quantity', oi.quantity,
-                             'price', oi.price
+                             'price', oi.price_final,
+                             'unit_price', oi.unit_price
                          )
                      ) as items
-                     FROM `Order` o
-                     LEFT JOIN OrderItem oi ON o.id = oi.order_id
-                     GROUP BY o.id";
-            $stmt = $this->db->prepare($query);
+                     FROM `Orders` o
+                     LEFT JOIN Order_detail oi ON o.idorders = oi.orderid
+                     GROUP BY o.idorders";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
             $stmt->execute();
-            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->get_result();
+            $orders = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
             
             // Procesar los items de cada orden
             foreach ($orders as &$order) {
@@ -35,7 +40,7 @@ class OrderController extends BaseController
             
             header('Content-Type: application/json');
             echo json_encode($orders);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al obtener las órdenes: " . $e->getMessage()]);
         }
@@ -43,46 +48,44 @@ class OrderController extends BaseController
 
     public function getAction()
     {
-        try {
-            if (!isset($_GET['id'])) {
-                header("HTTP/1.1 400 Bad Request");
-                echo json_encode(["error" => "ID no proporcionado"]);
-                return;
+        $strErrorDesc = '';
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
+        $arrQueryStringParams = $this->getQueryStringParams();
+
+        if (strtoupper($requestMethod) === 'GET') {
+            if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+                $strErrorDesc = 'ID no válido';
+                $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+            } else {
+                try {
+                    $orderModel = new OrderModel();
+                    $order = $orderModel->getOrderById((int)$_GET['id']);
+                    if (!$order) {
+                        $strErrorDesc = 'Pedido no encontrado';
+                        $strErrorHeader = 'HTTP/1.1 404 Not Found';
+                    } else {
+                        $responseData = json_encode($order);
+                    }
+                } catch (Error | Exception $e) {
+                    $strErrorDesc = $e->getMessage();
+                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                }
             }
+        } else {
+            $strErrorDesc = "Método no permitido";
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+        }
 
-            $query = "SELECT o.*, 
-                     GROUP_CONCAT(
-                         JSON_OBJECT(
-                             'id', oi.id,
-                             'sports_jersey_id', oi.sports_jersey_id,
-                             'size_id', oi.size_id,
-                             'quantity', oi.quantity,
-                             'price', oi.price
-                         )
-                     ) as items
-                     FROM `Order` o
-                     LEFT JOIN OrderItem oi ON o.id = oi.order_id
-                     WHERE o.id = :id
-                     GROUP BY o.id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $_GET['id'], PDO::PARAM_INT);
-            $stmt->execute();
-            $order = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$order) {
-                header("HTTP/1.1 404 Not Found");
-                echo json_encode(["error" => "Orden no encontrada"]);
-                return;
-            }
-
-            // Procesar los items de la orden
-            $order['items'] = json_decode('[' . $order['items'] . ']', true);
-
-            header('Content-Type: application/json');
-            echo json_encode($order);
-        } catch (PDOException $e) {
-            header("HTTP/1.1 500 Internal Server Error");
-            echo json_encode(["error" => "Error al obtener la orden: " . $e->getMessage()]);
+        if (!$strErrorDesc) {
+            $this->sendOutput(
+                $responseData,
+                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(array('error' => $strErrorDesc)),
+                array('Content-Type: application/json', $strErrorHeader)
+            );
         }
     }
 
@@ -91,62 +94,85 @@ class OrderController extends BaseController
         try {
             $data = json_decode(file_get_contents('php://input'), true);
 
-            if (!isset($data['client_id']) || !isset($data['items']) || !is_array($data['items'])) {
+            if (!isset($data['businessid']) || !isset($data['items']) || !is_array($data['items'])) {
                 header("HTTP/1.1 400 Bad Request");
                 echo json_encode(["error" => "Datos de orden inválidos"]);
                 return;
             }
 
-            $this->db->beginTransaction();
+            $this->db->getConnection()->begin_transaction();
+
+            // Obtener la categoría del cliente y su porcentaje de descuento
+            $query = "SELECT cc.offer_percentage 
+                     FROM Business b 
+                     JOIN Client_category cc ON b.categoryid = cc.idcategory 
+                     WHERE b.idbusiness = ?";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+            $stmt->bind_param("i", $data['businessid']);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $business = $result->fetch_assoc();
+
+            if (!$business) {
+                throw new Exception("Negocio no encontrado");
+            }
+
+            $discountPercentage = $business['offer_percentage'] / 100;
 
             // Crear la orden
-            $query = "INSERT INTO `Order` (client_id, total) VALUES (:client_id, 0)";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':client_id', $data['client_id'], PDO::PARAM_STR);
+            $query = "INSERT INTO `Orders` (businessid) VALUES (?)";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+            $stmt->bind_param("i", $data['businessid']);
             $stmt->execute();
-            $orderId = $this->db->lastInsertId();
+            $orderId = $stmt->insert_id;
 
             $total = 0;
-            // Crear los items de la orden
+
+            // Procesar cada item de la orden
             foreach ($data['items'] as $item) {
-                if (!isset($item['sports_jersey_id']) || !isset($item['size_id']) || !isset($item['quantity'])) {
+                if (!isset($item['iditem']) || !isset($item['quantity'])) {
                     throw new Exception("Datos de item inválidos");
                 }
 
-                // Obtener el precio de la camiseta
-                $query = "SELECT precio FROM Sports_jersey WHERE id = :id";
-                $stmt = $this->db->prepare($query);
-                $stmt->bindParam(':id', $item['sports_jersey_id'], PDO::PARAM_INT);
+                // Obtener el precio base de la camiseta
+                $query = "SELECT price FROM Sports_jersey WHERE iditem = ?";
+                $stmt = $this->db->getConnection()->prepare($query);
+                if (!$stmt) {
+                    throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+                }
+                $stmt->bind_param("i", $item['iditem']);
                 $stmt->execute();
-                $jersey = $stmt->fetch(PDO::FETCH_ASSOC);
+                $result = $stmt->get_result();
+                $jersey = $result->fetch_assoc();
 
                 if (!$jersey) {
                     throw new Exception("Camiseta no encontrada");
                 }
 
-                $price = $jersey['precio'];
-                $itemTotal = $price * $item['quantity'];
+                // Calcular el precio con descuento
+                $basePrice = $jersey['price'];
+                $unitPrice = $basePrice * (1 - $discountPercentage);
+                $itemTotal = $unitPrice * $item['quantity'];
                 $total += $itemTotal;
 
-                $query = "INSERT INTO OrderItem (order_id, sports_jersey_id, size_id, quantity, price) 
-                         VALUES (:order_id, :sports_jersey_id, :size_id, :quantity, :price)";
-                $stmt = $this->db->prepare($query);
-                $stmt->bindParam(':order_id', $orderId, PDO::PARAM_INT);
-                $stmt->bindParam(':sports_jersey_id', $item['sports_jersey_id'], PDO::PARAM_INT);
-                $stmt->bindParam(':size_id', $item['size_id'], PDO::PARAM_INT);
-                $stmt->bindParam(':quantity', $item['quantity'], PDO::PARAM_INT);
-                $stmt->bindParam(':price', $price, PDO::PARAM_STR);
+                // Insertar el detalle de la orden
+                $query = "INSERT INTO Order_detail (orderid, iditem, quantity, unit_price, price_final) 
+                         VALUES (?, ?, ?, ?, ?)";
+                $stmt = $this->db->getConnection()->prepare($query);
+                if (!$stmt) {
+                    throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+                }
+                $stmt->bind_param("iiidi", $orderId, $item['iditem'], $item['quantity'], $unitPrice, $itemTotal);
                 $stmt->execute();
             }
 
-            // Actualizar el total de la orden
-            $query = "UPDATE `Order` SET total = :total WHERE id = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':total', $total, PDO::PARAM_STR);
-            $stmt->bindParam(':id', $orderId, PDO::PARAM_INT);
-            $stmt->execute();
-
-            $this->db->commit();
+            $this->db->getConnection()->commit();
 
             header("HTTP/1.1 201 Created");
             echo json_encode([
@@ -155,8 +181,8 @@ class OrderController extends BaseController
                 "total" => $total
             ]);
         } catch (Exception $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
+            if ($this->db->getConnection()->in_transaction) {
+                $this->db->getConnection()->rollback();
             }
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al crear la orden: " . $e->getMessage()]);

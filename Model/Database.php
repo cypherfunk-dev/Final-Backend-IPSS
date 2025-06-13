@@ -82,4 +82,9 @@ class Database
             throw new Exception($e->getMessage());
         }
     }
+
+    public function getConnection(): mysqli
+    {
+        return $this->connection;
+    }
 }

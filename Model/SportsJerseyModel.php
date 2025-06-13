@@ -57,10 +57,10 @@ class SportsJerseyModel extends Database
         try {
             $query = "SELECT sj.*, 
                             c.name as country_name, 
-                            cl.name as club_name 
-                     FROM Sports_jersey sj 
-                     LEFT JOIN Country c ON sj.idcountry = c.idcountry 
-                     LEFT JOIN Club cl ON sj.idclub = cl.idclub 
+                            cl.name as club_name
+                     FROM Sports_jersey sj
+                     LEFT JOIN Country c ON sj.idcountry = c.idcountry
+                     LEFT JOIN Club cl ON sj.idclub = cl.idclub
                      WHERE sj.iditem = ? AND sj.deleted IS NULL";
             
             $stmt = $this->connection->prepare($query);
@@ -70,14 +70,15 @@ class SportsJerseyModel extends Database
             
             $stmt->bind_param("i", $id);
             $stmt->execute();
-            $result = $stmt->get_result()->fetch_assoc();
-            $stmt->close();
+            $result = $stmt->get_result();
             
-            if ($result) {
-                $result['precio_final'] = $this->calculateFinalPrice($result, $clientId);
+            if ($result->num_rows > 0) {
+                $jersey = $result->fetch_assoc();
+                $jersey['precio_final'] = $this->calculateFinalPrice($jersey, $clientId);
+                return $jersey;
             }
             
-            return $result ?: [];
+            return null;
         } catch(Exception $e) {
             throw new Exception("Error al obtener la camiseta: " . $e->getMessage());
         }
@@ -160,6 +161,15 @@ class SportsJerseyModel extends Database
      */
     public function createJersey(array $data): array
     {
+        // Validar que solo se envíe el precio base
+        if (isset($data['precio_oferta'])) {
+            throw new Exception("El precio de oferta se calcula automáticamente según la categoría del cliente");
+        }
+
+        if (!isset($data['price']) || !is_numeric($data['price'])) {
+            throw new Exception("El precio base es requerido y debe ser un número");
+        }
+
         $sql = "INSERT INTO Sports_jersey (title, color, idcountry, idclub, sku, price, type, description, created)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         
@@ -194,6 +204,16 @@ class SportsJerseyModel extends Database
      */
     public function updateJersey(int $id, array $data): void
     {
+        // Validar campos requeridos
+        $requiredFields = ['title', 'color', 'idcountry', 'idclub', 'sku', 'price', 'type'];
+        $missingFields = array_filter($requiredFields, function($field) use ($data) {
+            return !isset($data[$field]) || empty($data[$field]);
+        });
+
+        if (!empty($missingFields)) {
+            throw new Exception("Campos requeridos faltantes: " . implode(', ', $missingFields));
+        }
+
         $sql = "UPDATE Sports_jersey SET 
                 title = ?,
                 color = ?,
@@ -203,13 +223,15 @@ class SportsJerseyModel extends Database
                 price = ?,
                 type = ?,
                 description = ?,
-                modified = NOW()
+                modified = CURRENT_TIMESTAMP
                 WHERE iditem = ? AND deleted IS NULL";
-
+        
         $stmt = $this->connection->prepare($sql);
         if (!$stmt) {
             throw new Exception("Error preparando consulta: " . $this->connection->error);
         }
+
+        $description = isset($data['description']) ? $data['description'] : null;
 
         $stmt->bind_param("ssiissdsi", 
             $data['title'],
@@ -219,12 +241,16 @@ class SportsJerseyModel extends Database
             $data['sku'],
             $data['price'],
             $data['type'],
-            $data['description'],
+            $description,
             $id
         );
 
         if (!$stmt->execute()) {
             throw new Exception("Error ejecutando consulta: " . $stmt->error);
+        }
+
+        if ($stmt->affected_rows === 0) {
+            throw new Exception("No se encontró la camiseta o no se realizaron cambios");
         }
 
         $stmt->close();

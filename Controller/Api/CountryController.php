@@ -5,20 +5,25 @@ class CountryController
 
     public function __construct()
     {
-        $this->db = Database::getInstance();
+        $this->db = new Database();
     }
 
     public function listAction()
     {
         try {
             $query = "SELECT * FROM Country";
-            $stmt = $this->db->prepare($query);
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
             $stmt->execute();
-            $countries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->get_result();
+            $countries = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
             
             header('Content-Type: application/json');
             echo json_encode($countries);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al obtener los países: " . $e->getMessage()]);
         }
@@ -33,11 +38,16 @@ class CountryController
                 return;
             }
 
-            $query = "SELECT * FROM Country WHERE id = :id";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':id', $_GET['id'], PDO::PARAM_INT);
+            $query = "SELECT * FROM Country WHERE idcountry = ?";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+            $stmt->bind_param('i', $_GET['id']);
             $stmt->execute();
-            $country = $stmt->fetch(PDO::FETCH_ASSOC);
+            $result = $stmt->get_result();
+            $country = $result->fetch_assoc();
+            $stmt->close();
 
             if (!$country) {
                 header("HTTP/1.1 404 Not Found");
@@ -47,7 +57,7 @@ class CountryController
 
             header('Content-Type: application/json');
             echo json_encode($country);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al obtener el país: " . $e->getMessage()]);
         }
@@ -64,18 +74,26 @@ class CountryController
                 return;
             }
 
-            $query = "INSERT INTO Country (name) VALUES (:name)";
-            $stmt = $this->db->prepare($query);
-            $stmt->bindParam(':name', $data['name'], PDO::PARAM_STR);
-            $stmt->execute();
+            $query = "INSERT INTO Country (name) VALUES (?)";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+            
+            $stmt->bind_param('s', $data['name']);
+            if (!$stmt->execute()) {
+                throw new Exception("Error ejecutando consulta: " . $stmt->error);
+            }
 
-            $id = $this->db->lastInsertId();
+            $id = $stmt->insert_id;
+            $stmt->close();
+
             header("HTTP/1.1 201 Created");
             echo json_encode([
                 "message" => "País creado exitosamente",
                 "id" => $id
             ]);
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(["error" => "Error al crear el país: " . $e->getMessage()]);
         }
@@ -83,122 +101,113 @@ class CountryController
 
     public function updateAction()
     {
-        $strErrorDesc = '';
-        $requestMethod = $_SERVER['REQUEST_METHOD'];
-        $arrQueryStringParams = $this->getQueryStringParams();
-
-        if (strtoupper($requestMethod) === 'PUT') {
-            if (!isset($arrQueryStringParams['id']) || !is_numeric($arrQueryStringParams['id'])) {
-                $strErrorDesc = 'ID no válido';
-                $strErrorHeader = 'HTTP/1.1 400 Bad Request';
-            } else {
-                $input = json_decode(file_get_contents('php://input'), true);
-
-                if (json_last_error() !== JSON_ERROR_NONE || !is_array($input)) {
-                    $strErrorDesc = 'JSON inválido';
-                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
-                } else {
-                    try {
-                        $countryModel = new CountryModel();
-                        $countryModel->updateCountry((int)$arrQueryStringParams['id'], $input);
-                        $responseData = json_encode(['success' => true]);
-                    } catch (Error | Exception $e) {
-                        $strErrorDesc = $e->getMessage();
-                        $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
-                    }
-                }
+        try {
+            if (!isset($_GET['id'])) {
+                header("HTTP/1.1 400 Bad Request");
+                echo json_encode(["error" => "ID no proporcionado"]);
+                return;
             }
-        } else {
-            $strErrorDesc = "Método no permitido";
-            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
-        }
 
-        if (!$strErrorDesc) {
-            $this->sendOutput(
-                $responseData,
-                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
-            );
-        } else {
-            $this->sendOutput(
-                json_encode(array('error' => $strErrorDesc)),
-                array('Content-Type: application/json', $strErrorHeader)
-            );
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!isset($data['name'])) {
+                header("HTTP/1.1 400 Bad Request");
+                echo json_encode(["error" => "Nombre del país no proporcionado"]);
+                return;
+            }
+
+            $query = "UPDATE Country SET name = ? WHERE idcountry = ?";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+
+            $stmt->bind_param('si', $data['name'], $_GET['id']);
+            if (!$stmt->execute()) {
+                throw new Exception("Error ejecutando consulta: " . $stmt->error);
+            }
+
+            if ($stmt->affected_rows === 0) {
+                header("HTTP/1.1 404 Not Found");
+                echo json_encode(["error" => "País no encontrado"]);
+                return;
+            }
+
+            $stmt->close();
+            header("HTTP/1.1 200 OK");
+            echo json_encode(["message" => "País actualizado exitosamente"]);
+        } catch (Exception $e) {
+            header("HTTP/1.1 500 Internal Server Error");
+            echo json_encode(["error" => "Error al actualizar el país: " . $e->getMessage()]);
         }
     }
 
     public function deleteAction()
     {
-        $strErrorDesc = '';
-        $requestMethod = $_SERVER['REQUEST_METHOD'];
-        $arrQueryStringParams = $this->getQueryStringParams();
-
-        if (strtoupper($requestMethod) === 'DELETE') {
-            if (!isset($arrQueryStringParams['id']) || !is_numeric($arrQueryStringParams['id'])) {
-                $strErrorDesc = 'ID no válido';
-                $strErrorHeader = 'HTTP/1.1 400 Bad Request';
-            } else {
-                try {
-                    $countryModel = new CountryModel();
-                    $countryModel->deleteCountry((int)$arrQueryStringParams['id']);
-                    $responseData = json_encode(['success' => true]);
-                } catch (Error | Exception $e) {
-                    $strErrorDesc = $e->getMessage();
-                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
-                }
+        try {
+            if (!isset($_GET['id'])) {
+                header("HTTP/1.1 400 Bad Request");
+                echo json_encode(["error" => "ID no proporcionado"]);
+                return;
             }
-        } else {
-            $strErrorDesc = "Método no permitido";
-            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
-        }
 
-        if (!$strErrorDesc) {
-            $this->sendOutput(
-                $responseData,
-                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
-            );
-        } else {
-            $this->sendOutput(
-                json_encode(array('error' => $strErrorDesc)),
-                array('Content-Type: application/json', $strErrorHeader)
-            );
+            $query = "DELETE FROM Country WHERE idcountry = ?";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+
+            $stmt->bind_param('i', $_GET['id']);
+            if (!$stmt->execute()) {
+                throw new Exception("Error ejecutando consulta: " . $stmt->error);
+            }
+
+            if ($stmt->affected_rows === 0) {
+                header("HTTP/1.1 404 Not Found");
+                echo json_encode(["error" => "País no encontrado"]);
+                return;
+            }
+
+            $stmt->close();
+            header("HTTP/1.1 200 OK");
+            echo json_encode(["message" => "País eliminado exitosamente"]);
+        } catch (Exception $e) {
+            header("HTTP/1.1 500 Internal Server Error");
+            echo json_encode(["error" => "Error al eliminar el país: " . $e->getMessage()]);
         }
     }
 
     public function getByNameAction()
     {
-        $strErrorDesc = '';
-        $requestMethod = $_SERVER['REQUEST_METHOD'];
-        $arrQueryStringParams = $this->getQueryStringParams();
-
-        if (strtoupper($requestMethod) === 'GET') {
-            if (!isset($arrQueryStringParams['name'])) {
-                $strErrorDesc = 'Nombre no proporcionado';
-                $strErrorHeader = 'HTTP/1.1 400 Bad Request';
-            } else {
-                try {
-                    $countryModel = new CountryModel();
-                    $country = $countryModel->getCountryByName($arrQueryStringParams['name']);
-                    $responseData = json_encode($country);
-                } catch (Error | Exception $e) {
-                    $strErrorDesc = $e->getMessage();
-                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
-                }
+        try {
+            if (!isset($_GET['name'])) {
+                header("HTTP/1.1 400 Bad Request");
+                echo json_encode(["error" => "Nombre no proporcionado"]);
+                return;
             }
-        } else {
-            $strErrorDesc = "Método no permitido";
-            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
-        }
 
-        if (!$strErrorDesc) {
-            $this->sendOutput(
-                $responseData,
-                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
-            );
-        } else {
-            $this->sendOutput(
-                json_encode(array('error' => $strErrorDesc)),
-                array('Content-Type: application/json', $strErrorHeader)
-            );
+            $query = "SELECT * FROM Country WHERE name = ?";
+            $stmt = $this->db->getConnection()->prepare($query);
+            if (!$stmt) {
+                throw new Exception("Error preparando consulta: " . $this->db->getConnection()->error);
+            }
+
+            $stmt->bind_param('s', $_GET['name']);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $country = $result->fetch_assoc();
+            $stmt->close();
+
+            if (!$country) {
+                header("HTTP/1.1 404 Not Found");
+                echo json_encode(["error" => "País no encontrado"]);
+                return;
+            }
+
+            header('Content-Type: application/json');
+            echo json_encode($country);
+        } catch (Exception $e) {
+            header("HTTP/1.1 500 Internal Server Error");
+            echo json_encode(["error" => "Error al obtener el país: " . $e->getMessage()]);
         }
     }
 } 

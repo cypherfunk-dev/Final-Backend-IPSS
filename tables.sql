@@ -193,6 +193,8 @@ CREATE TABLE IF NOT EXISTS `database`.`Order_detail` (
   `iditem` INT NOT NULL,
   `orderid` INT NOT NULL,
   `quantity` INT NOT NULL,
+  `unit_price` INT NOT NULL,
+`price_final` INT NOT NULL,
 `created` DATETIME DEFAULT CURRENT_TIMESTAMP,
 `modified` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted` DATETIME NULL DEFAULT NULL,
@@ -308,7 +310,7 @@ INSERT INTO `Orders` ( `businessid`) VALUES
 (1),
 (2);
 
-INSERT INTO `Order_detail` (`iditem`, `orderid`, `quantity`) VALUES
-( 1, 1, 2),
-( 2, 1, 1),
-( 3, 2, 3);
+INSERT INTO `Order_detail` (`iditem`, `orderid`, `quantity`, `unit_price`, `price_final`) VALUES
+( 1, 1, 2, 10800, 21600),
+( 2, 1, 1, 12150, 12150),
+( 3, 2, 3, 11250, 33750);

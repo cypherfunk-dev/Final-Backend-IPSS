@@ -316,4 +316,47 @@ class SizeAvailabilityController extends BaseController
             );
         }
     }
+
+    public function getAction()
+    {
+        $strErrorDesc = '';
+        $requestMethod = $_SERVER['REQUEST_METHOD'];
+        $arrQueryStringParams = $this->getQueryStringParams();
+
+        if (strtoupper($requestMethod) === 'GET') {
+            if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+                $strErrorDesc = 'ID no válido';
+                $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+            } else {
+                try {
+                    $sizeAvailabilityModel = new SizeAvailabilityModel();
+                    $availability = $sizeAvailabilityModel->getAvailabilityById((int)$_GET['id']);
+                    if (!$availability) {
+                        $strErrorDesc = 'Disponibilidad no encontrada';
+                        $strErrorHeader = 'HTTP/1.1 404 Not Found';
+                    } else {
+                        $responseData = json_encode($availability);
+                    }
+                } catch (Error | Exception $e) {
+                    $strErrorDesc = $e->getMessage();
+                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                }
+            }
+        } else {
+            $strErrorDesc = "Método no permitido";
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+        }
+
+        if (!$strErrorDesc) {
+            $this->sendOutput(
+                $responseData,
+                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(array('error' => $strErrorDesc)),
+                array('Content-Type: application/json', $strErrorHeader)
+            );
+        }
+    }
 } 
