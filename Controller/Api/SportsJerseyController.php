@@ -167,53 +167,65 @@ class SportsJerseyController extends BaseController
         }
     }
 
-    public function updateAction()
-    {
-        $strErrorDesc = '';
-        $requestMethod = $_SERVER['REQUEST_METHOD'];
-        $arrQueryStringParams = $this->getQueryStringParams();
+public function updateAction()
+{
+    $strErrorDesc = '';
+    $requestMethod = $_SERVER['REQUEST_METHOD'];
+    $arrQueryStringParams = $this->getQueryStringParams();
 
-        if (strtoupper($requestMethod) === 'PUT') {
-            if (!isset($arrQueryStringParams['id']) || !is_numeric($arrQueryStringParams['id'])) {
-                $strErrorDesc = 'ID no válido';
-                $strErrorHeader = 'HTTP/1.1 400 Bad Request';
-            } else {
-                $input = json_decode(file_get_contents('php://input'), true);
-
-                if (json_last_error() !== JSON_ERROR_NONE || !is_array($input)) {
-                    $strErrorDesc = 'JSON inválido';
-                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
-                } else {
-                    try {
-                        $jerseyModel = new SportsJerseyModel();
-                        $jerseyModel->updateJersey((int)$arrQueryStringParams['id'], $input);
-                        $responseData = json_encode([
-                            'success' => true,
-                            'message' => 'Camiseta actualizada exitosamente'
-                        ]);
-                    } catch (Exception $e) {
-                        $strErrorDesc = $e->getMessage();
-                        $strErrorHeader = 'HTTP/1.1 400 Bad Request';
-                    }
-                }
-            }
-        } else {
-            $strErrorDesc = "Método no permitido";
-            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
-        }
-
-        if (!$strErrorDesc) {
-            $this->sendOutput(
-                $responseData,
-                array('Content-Type: application/json', 'HTTP/1.1 200 OK')
-            );
-        } else {
-            $this->sendOutput(
-                json_encode(array('error' => $strErrorDesc)),
-                array('Content-Type: application/json', $strErrorHeader)
-            );
+    // Obtener el ID desde la query o desde el último segmento de la URL
+    $id = null;
+    if (isset($arrQueryStringParams['id']) && is_numeric($arrQueryStringParams['id'])) {
+        $id = (int)$arrQueryStringParams['id'];
+    } else {
+        $uriParts = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'));
+        $lastPart = end($uriParts);
+        if (is_numeric($lastPart)) {
+            $id = (int)$lastPart;
         }
     }
+
+    if (strtoupper($requestMethod) === 'PUT') {
+        if (!$id) {
+            $strErrorDesc = 'ID no válido';
+            $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+        } else {
+            $input = json_decode(file_get_contents('php://input'), true);
+
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($input)) {
+                $strErrorDesc = 'JSON inválido';
+                $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+            } else {
+                try {
+                    $jerseyModel = new SportsJerseyModel();
+                    $jerseyModel->updateJersey($id, $input);
+                    $responseData = json_encode([
+                        'success' => true,
+                        'message' => 'Camiseta actualizada exitosamente'
+                    ]);
+                } catch (Exception $e) {
+                    $strErrorDesc = $e->getMessage();
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                }
+            }
+        }
+    } else {
+        $strErrorDesc = "Método no permitido";
+        $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+    }
+
+    if (!$strErrorDesc) {
+        $this->sendOutput(
+            $responseData,
+            ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+        );
+    } else {
+        $this->sendOutput(
+            json_encode(['error' => $strErrorDesc]),
+            ['Content-Type: application/json', $strErrorHeader]
+        );
+    }
+}
 
     public function deleteAction()
     {
@@ -474,14 +486,46 @@ class SportsJerseyController extends BaseController
         }
     }
 
+    public function __call($name, $arguments)
+    {
+        if ($name === 'createAction' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            return $this->createAction();
+        }
+        
+        if ($name === 'putAction' && ($_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'PATCH')) {
+            return $this->putAction();
+        }
+        
+        if ($name === 'updateAction' && ($_SERVER['REQUEST_METHOD'] === 'PUT' || $_SERVER['REQUEST_METHOD'] === 'PATCH')) {
+            return $this->putAction();
+        }
+        
+        $this->sendOutput(
+            json_encode(array('error' => 'Método no soportado', 'method' => $name)),
+            array('Content-Type: application/json', 'HTTP/1.1 405 Method Not Allowed')
+        );
+    }
+
     public function putAction()
     {
         $strErrorDesc = '';
         $requestMethod = $_SERVER['REQUEST_METHOD'];
-        $arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'PUT' || strtoupper($requestMethod) === 'PATCH') {
-            if (!isset($arrQueryStringParams['id']) || !is_numeric($arrQueryStringParams['id'])) {
+            // Obtener el ID de la URL
+            $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            $pathParts = explode('/', trim($uri, '/'));
+            $id = null;
+            
+            // Buscar el ID en la URL
+            foreach ($pathParts as $part) {
+                if (is_numeric($part)) {
+                    $id = (int)$part;
+                    break;
+                }
+            }
+
+            if ($id === null) {
                 $strErrorDesc = 'ID no válido';
                 $strErrorHeader = 'HTTP/1.1 400 Bad Request';
             } else {
@@ -526,7 +570,7 @@ class SportsJerseyController extends BaseController
                         }
 
                         $jerseyModel = new SportsJerseyModel();
-                        $jerseyModel->updateJersey((int)$arrQueryStringParams['id'], $input);
+                        $jerseyModel->updateJersey($id, $input);
                         $responseData = json_encode([
                             'success' => true,
                             'message' => 'Camiseta actualizada exitosamente'
@@ -642,16 +686,4 @@ class SportsJerseyController extends BaseController
      *     )
      * )
      */
-
-    public function __call($name, $arguments)
-    {
-        if ($name === 'createAction' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-            return $this->createAction();
-        }
-        
-        $this->sendOutput(
-            json_encode(array('error' => 'Método no soportado', 'method' => $name)),
-            array('Content-Type: application/json', 'HTTP/1.1 405 Method Not Allowed')
-        );
-    }
 } 

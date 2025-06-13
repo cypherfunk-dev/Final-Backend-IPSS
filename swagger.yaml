@@ -35,13 +35,6 @@ paths:
           schema:
             type: integer
             default: 10
-        - name: client_id
-          in: query
-          description: ID del cliente (90minutos o tdeportes)
-          required: false
-          schema:
-            type: string
-            enum: ["90minutos", "tdeportes"]
       responses:
         '200':
           description: Lista de camisetas obtenida exitosamente
@@ -81,13 +74,7 @@ paths:
           required: true
           schema:
             type: integer
-        - name: client_id
-          in: query
-          description: ID del cliente (90minutos o tdeportes)
-          required: false
-          schema:
-            type: string
-            enum: ["90minutos", "tdeportes"]
+
       responses:
         '200':
           description: Camiseta encontrada
