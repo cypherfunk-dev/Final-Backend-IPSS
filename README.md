@@ -1,16 +1,8 @@
 # API de Camisetas Deportivas
 
-## Requisitos Previos
-- PHP 7.4 o superior
-- Apache con mod_rewrite habilitado
-- MySQL 5.7 o superior
-- Composer (para gestionar dependencias)
-
 ## Instalación
 
 docker-compose up -d  
-
-docker logs final-backend-ipss-mysql-1
 
 php -S localhost:8000 -t .
 
@@ -19,7 +11,7 @@ php -S localhost:8000 -t .
 ### Documentación
 La documentación de la API está disponible en:
 ```
-http://localhost/swagger-ui.html
+http://localhost:8000/swagger-ui.html
 ```
 
 ### Endpoints Principales
@@ -69,31 +61,6 @@ PUT    /api/order/{id}           # Actualizar orden
 DELETE /api/order/{id}           # Eliminar orden
 ```
 
-### Ejemplos de Uso
-
-1. **Listar camisetas con precio para cliente preferencial**:
-```bash
-curl -X GET "http://localhost/api/sports-jersey?client_id=90minutos"
-```
-
-2. **Listar camisetas con precio base**:
-```bash
-curl -X GET "http://localhost/api/sports-jersey?client_id=tdeportes"
-```
-
-3. **Crear una nueva camiseta**:
-```bash
-curl -X POST "http://localhost/api/sports-jersey" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "name": "Camiseta Barcelona 2024",
-           "description": "Camiseta oficial del FC Barcelona",
-           "precio": 89.99,
-           "precio_oferta": 79.99,
-           "country_id": 1,
-           "club_id": 1
-         }'
-```
 
 ### Parámetros Comunes
 
@@ -109,6 +76,4 @@ La API devuelve respuestas en formato JSON con los siguientes códigos HTTP:
 - 404: No encontrado
 - 500: Error interno del servidor
 
-## Soporte
-
-Para reportar problemas o solicitar ayuda, por favor crea un issue en el repositorio.
+## En el documento Informe Backend.docx esta la información extra solicitada
