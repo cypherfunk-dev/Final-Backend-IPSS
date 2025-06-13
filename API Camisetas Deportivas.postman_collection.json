@@ -1,0 +1,394 @@
+{
+	"info": {
+		"_postman_id": "aa9289a6-d1d5-46a6-8195-7867a4290a4e",
+		"name": "API Camisetas Deportivas",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33688905"
+	},
+	"item": [
+		{
+			"name": "Camisetas",
+			"item": [
+				{
+					"name": "Listar camisetas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/api/sports-jersey",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"sports-jersey"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear camiseta",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Ejemplo\",\n  \"color\": \"Rojo\",\n  \"idcountry\": 1,\n  \"idclub\": 1,\n  \"sku\": \"SKU123\",\n  \"price\": 10000,\n  \"type\": \"player\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/sports-jersey",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"sports-jersey"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener camiseta por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/api/sports-jersey/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"sports-jersey",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar camiseta",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Ejemplo actualizado\",\n  \"color\": \"Azul\",\n  \"idcountry\": 1,\n  \"idclub\": 1,\n  \"sku\": \"SKU456\",\n  \"price\": 11000,\n  \"type\": \"fan\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/sports-jersey/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"sports-jersey",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar camiseta",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/api/sports-jersey/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"sports-jersey",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tallas",
+			"item": [
+				{
+					"name": "Listar tallas",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "/api/sizes",
+							"path": [
+								"api",
+								"sizes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear talla",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"name\": \"M\" }"
+						},
+						"url": {
+							"raw": "/api/sizes",
+							"path": [
+								"api",
+								"sizes"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Países",
+			"item": [
+				{
+					"name": "Listar países",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "/api/countries",
+							"path": [
+								"api",
+								"countries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear país",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"name\": \"Chile\" }"
+						},
+						"url": {
+							"raw": "/api/countries",
+							"path": [
+								"api",
+								"countries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar país",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"name\": \"Argentina\" }"
+						},
+						"url": {
+							"raw": "/api/countries/1",
+							"path": [
+								"api",
+								"countries",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar país",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "/api/countries/1",
+							"path": [
+								"api",
+								"countries",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Clubes",
+			"item": [
+				{
+					"name": "Listar clubes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "/api/clubs",
+							"path": [
+								"api",
+								"clubs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear club",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"name\": \"Boca Juniors\" }"
+						},
+						"url": {
+							"raw": "/api/clubs",
+							"path": [
+								"api",
+								"clubs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar club",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"name\": \"River Plate\" }"
+						},
+						"url": {
+							"raw": "/api/clubs/1",
+							"path": [
+								"api",
+								"clubs",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar club",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "/api/clubs/1",
+							"path": [
+								"api",
+								"clubs",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Órdenes",
+			"item": [
+				{
+					"name": "Listar órdenes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "/api/orders",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear orden",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"businessid\": 1,\n  \"items\": [\n    { \"iditem\": 1, \"quantity\": 2 }\n  ]\n}"
+						},
+						"url": {
+							"raw": "/api/orders",
+							"path": [
+								"api",
+								"orders"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
